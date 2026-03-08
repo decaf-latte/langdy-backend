@@ -1,0 +1,54 @@
+spring:
+  profiles:
+    active: h2
+
+  jackson:
+    time-zone: UTC
+    date-format: yyyy-MM-dd'T'HH:mm:ss
+
+---
+spring:
+  config:
+    activate:
+      on-profile: h2
+
+  datasource:
+    url: jdbc:h2:mem:langdy;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+
+  jpa:
+    hibernate:
+      ddl-auto: create
+    properties:
+      hibernate:
+        format_sql: true
+        show_sql: true
+    database-platform: org.hibernate.dialect.H2Dialect
+
+---
+spring:
+  config:
+    activate:
+      on-profile: mysql
+
+  datasource:
+    url: jdbc:mysql://localhost:3306/langdy?useSSL=false&serverTimezone=UTC&characterEncoding=UTF-8
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    username: root
+    password: root
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        format_sql: true
+        show_sql: true
+    database-platform: org.hibernate.dialect.MySQLDialect
