@@ -42,8 +42,9 @@ class AvailableTeachersControllerSpec extends Specification {
         mockMvc.perform(get("/api/v1/courses/1/available-teachers")
                 .param("startAt", "2026-03-10T09:00:00"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath('$.teachers').isArray())
-                .andExpect(jsonPath('$.teachers.length()').value(3))
+                .andExpect(jsonPath('$.success').value(true))
+                .andExpect(jsonPath('$.data.teachers').isArray())
+                .andExpect(jsonPath('$.data.teachers.length()').value(3))
     }
 
     def "수업 가능한 선생님 목록 조회 - 예약된 선생님 제외"() {
@@ -59,7 +60,8 @@ class AvailableTeachersControllerSpec extends Specification {
         mockMvc.perform(get("/api/v1/courses/1/available-teachers")
                 .param("startAt", "2026-03-10T09:00:00"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath('$.teachers.length()').value(2))
+                .andExpect(jsonPath('$.success').value(true))
+                .andExpect(jsonPath('$.data.teachers.length()').value(2))
     }
 
     def "수업 가능한 선생님 목록 조회 - 존재하지 않는 코스"() {

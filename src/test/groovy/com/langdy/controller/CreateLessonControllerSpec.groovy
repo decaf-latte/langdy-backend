@@ -41,13 +41,14 @@ class CreateLessonControllerSpec extends Specification {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content('{"startAt":"2026-03-10T09:00:00","courseId":1,"teacherId":1}'))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath('$.lessonId').exists())
-                .andExpect(jsonPath('$.courseId').value(1))
-                .andExpect(jsonPath('$.teacherId').value(1))
-                .andExpect(jsonPath('$.studentId').value(1))
-                .andExpect(jsonPath('$.status').value("BOOKED"))
-                .andExpect(jsonPath('$.startAt').value("2026-03-10T09:00:00"))
-                .andExpect(jsonPath('$.endAt').value("2026-03-10T09:20:00"))
+                .andExpect(jsonPath('$.success').value(true))
+                .andExpect(jsonPath('$.data.lessonId').exists())
+                .andExpect(jsonPath('$.data.courseId').value(1))
+                .andExpect(jsonPath('$.data.teacherId').value(1))
+                .andExpect(jsonPath('$.data.studentId').value(1))
+                .andExpect(jsonPath('$.data.status').value("BOOKED"))
+                .andExpect(jsonPath('$.data.startAt').value("2026-03-10T09:00:00"))
+                .andExpect(jsonPath('$.data.endAt').value("2026-03-10T09:20:00"))
     }
 
     def "수업 신청 - X-Student-Id 헤더 누락"() {
