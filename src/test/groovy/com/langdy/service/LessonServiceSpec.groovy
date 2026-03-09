@@ -3,8 +3,7 @@ package com.langdy.service
 import com.langdy.entity.Teacher
 import com.langdy.exception.BusinessException
 import com.langdy.exception.ErrorCode
-import com.langdy.repository.CourseRepository
-import com.langdy.repository.LessonQueryRepository
+import com.langdy.repository.*
 import spock.lang.Specification
 
 import java.time.Clock
@@ -14,13 +13,16 @@ import java.time.ZoneOffset
 class LessonServiceSpec extends Specification {
 
     def courseRepository = Mock(CourseRepository)
+    def teacherRepository = Mock(TeacherRepository)
+    def studentRepository = Mock(StudentRepository)
+    def lessonRepository = Mock(LessonRepository)
     def lessonQueryRepository = Mock(LessonQueryRepository)
     def clock = Clock.fixed(
             LocalDateTime.of(2026, 3, 1, 0, 0).toInstant(ZoneOffset.UTC),
             ZoneOffset.UTC
     )
 
-    def lessonService = new LessonService(clock, courseRepository, lessonQueryRepository)
+    def lessonService = new LessonService(clock, courseRepository, teacherRepository, studentRepository, lessonRepository, lessonQueryRepository)
 
     def startAt = LocalDateTime.of(2026, 3, 10, 9, 0, 0)
 
