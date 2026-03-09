@@ -1,5 +1,10 @@
 package com.langdy.service
 
+import com.langdy.dto.CreateLessonCommand
+import com.langdy.entity.Course
+import com.langdy.entity.Lesson
+import com.langdy.entity.LessonStatus
+import com.langdy.entity.Student
 import com.langdy.entity.Teacher
 import com.langdy.exception.BusinessException
 import com.langdy.exception.ErrorCode
@@ -25,6 +30,8 @@ class LessonServiceSpec extends Specification {
     def lessonService = new LessonService(clock, courseRepository, teacherRepository, studentRepository, lessonRepository, lessonQueryRepository)
 
     def startAt = LocalDateTime.of(2026, 3, 10, 9, 0, 0)
+
+    // === TASK#1 ===
 
     def "수업 가능한 선생님 조회 - 정상"() {
         given:
@@ -66,5 +73,100 @@ class LessonServiceSpec extends Specification {
         then:
         def e = thrown(BusinessException)
         e.errorCode == ErrorCode.PAST_START_TIME
+    }
+
+    // === TASK#2 ===
+
+    def "수업 신청 - 정상"() {
+        given:
+        def command = new CreateLessonCommand(startAt, 1L, 1L, 1L)
+        courseRepository.findById(1L) >> Optional.of(Mock(Course))
+        teacherRepository.findByIdWithLock(1L) >> Optional.of(Mock(Teacher))
+        studentRepository.findByIdWithLock(1L) >> Optional.of(Mock(Student))
+        lessonRepository.existsByTeacherIdAndStartAtAndStatus(1L, startAt, LessonStatus.BOOKED) >> false
+        lessonRepository.existsByStudentIdAndStartAtAndStatus(1L, startAt, LessonStatus.BOOKED) >> false
+        lessonRepository.save(_) >> { Lesson lesson -> lesson }
+
+        when:
+        def result = lessonService.createLesson(command)
+
+        then:
+        result.status == LessonStatus.BOOKED
+        result.endAt == startAt.plusMinutes(20)
+    }
+
+    def "수업 신청 - 코스가 없으면 COURSE_NOT_FOUND"() {
+        given:
+        def command = new CreateLessonCommand(startAt, 999L, 1L, 1L)
+        courseRepository.findById(999L) >> Optional.empty()
+
+        when:
+        lessonService.createLesson(command)
+
+        then:
+        def e = thrown(BusinessException)
+        e.errorCode == ErrorCode.COURSE_NOT_FOUND
+    }
+
+    def "수업 신청 - 선생님이 없으면 TEACHER_NOT_FOUND"() {
+        given:
+        def command = new CreateLessonCommand(startAt, 1L, 999L, 1L)
+        courseRepository.findById(1L) >> Optional.of(Mock(Course))
+        teacherRepository.findByIdWithLock(999L) >> Optional.empty()
+
+        when:
+        lessonService.createLesson(command)
+
+        then:
+        def e = thrown(BusinessException)
+        e.errorCode == ErrorCode.TEACHER_NOT_FOUND
+    }
+
+    def "수업 신청 - 학습자가 없으면 STUDENT_NOT_FOUND"() {
+        given:
+        def command = new CreateLessonCommand(startAt, 1L, 1L, 999L)
+        courseRepository.findById(1L) >> Optional.of(Mock(Course))
+        teacherRepository.findByIdWithLock(1L) >> Optional.of(Mock(Teacher))
+        studentRepository.findByIdWithLock(999L) >> Optional.empty()
+
+        when:
+        lessonService.createLesson(command)
+
+        then:
+        def e = thrown(BusinessException)
+        e.errorCode == ErrorCode.STUDENT_NOT_FOUND
+    }
+
+    def "수업 신청 - 선생님 시간 충돌이면 TEACHER_SCHEDULE_CONFLICT"() {
+        given:
+        def command = new CreateLessonCommand(startAt, 1L, 1L, 1L)
+        courseRepository.findById(1L) >> Optional.of(Mock(Course))
+        teacherRepository.findByIdWithLock(1L) >> Optional.of(Mock(Teacher))
+        studentRepository.findByIdWithLock(1L) >> Optional.of(Mock(Student))
+        lessonRepository.existsByTeacherIdAndStartAtAndStatus(1L, startAt, LessonStatus.BOOKED) >> true
+
+        when:
+        lessonService.createLesson(command)
+
+        then:
+        def e = thrown(BusinessException)
+        e.errorCode == ErrorCode.TEACHER_SCHEDULE_CONFLICT
+    }
+
+    def "수업 신청 - 학습자 시간 충돌이면 STUDENT_SCHEDULE_CONFLICT"() {
+        given:
+        def command = new CreateLessonCommand(startAt, 1L, 1L, 1L)
+        courseRepository.findById(1L) >> Optional.of(Mock(Course))
+        teacherRepository.findByIdWithLock(1L) >> Optional.of(Mock(Teacher))
+        studentRepository.findByIdWithLock(1L) >> Optional.of(Mock(Student))
+        lessonRepository.existsByTeacherIdAndStartAtAndStatus(1L, startAt, LessonStatus.BOOKED) >> false
+        lessonRepository.existsByStudentIdAndStartAtAndStatus(1L, startAt, LessonStatus.BOOKED) >> true
+
+        when:
+        lessonService.createLesson(command)
+
+        then:
+        def e = thrown(BusinessException)
+        e.errorCode == ErrorCode.STUDENT_SCHEDULE_CONFLICT
     }
 }
