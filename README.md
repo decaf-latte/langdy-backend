@@ -2,7 +2,7 @@
 
 ## 기술 스택
 
-- Java 21, Spring Boot 3.4.3
+- Java 21, Spring Boot 3.4.3 — Kotlin보다 Java가 더 익숙하여 완성도를 우선하여 Java로 작성했습니다.
 - Spring Data JPA + QueryDSL
 - H2 (개발/테스트), MySQL (운영)
 - Spock Framework (테스트)
@@ -185,7 +185,7 @@ sequenceDiagram
     C->>S: POST /lessons (X-Student-Id 헤더)
     S->>SV: createLesson(command)
     SV->>SV: StartTimeValidator.validate(startAt)
-    SV->>DB: courseRepository.findById(courseId)
+    SV->>DB: courseRepository.existsById(courseId)
     alt 코스 없음
         SV-->>C: 404 COURSE_NOT_FOUND
     end
@@ -204,6 +204,24 @@ sequenceDiagram
     SV-->>S: lesson
     S-->>C: 201 Created + lesson
 ```
+
+---
+
+## 설계 결정
+
+### courseId의 역할
+
+과제 전제: **"모든 선생님이 모든 코스를 진행할 수 있다."**
+
+`courseId`는 해당 코스가 존재하는지 확인하는 용도로만 사용되며, 선생님 필터링에는 관여하지 않는다. 수업 가능한 선생님 조회 API에서 `courseId`를 받지만, 실제 쿼리는 해당 시간대에 예약이 없는 모든 선생님을 반환한다. 향후 선생님별 코스 제한이 필요하면 `TeacherCourse` 매핑 테이블을 추가하여 확장할 수 있다.
+
+### ID 기반 연관관계 (FK 대신 Long 필드)
+
+`Lesson` 엔티티는 `@ManyToOne` 대신 `Long teacherId`, `Long studentId`, `Long courseId`를 사용한다.
+
+- **N+1 방지:** 연관 엔티티를 즉시 로딩하지 않으므로 불필요한 쿼리가 발생하지 않는다.
+- **도메인 결합도 최소화:** Lesson이 Teacher/Student/Course의 생명주기에 의존하지 않는다.
+- **존재 검증:** 필요한 경우 애플리케이션 레벨에서 `existsById()` 또는 `findByIdWithLock()`으로 존재를 확인한다.
 
 ---
 
@@ -234,6 +252,8 @@ Lesson 행에 락을 걸면 첫 예약 시 row가 없어서 `SELECT FOR UPDATE`�
 5. 트랜잭션 커밋 → 락 해제
 
 **락 순서:** 항상 Teacher → Student 순서로 획득하여 데드락을 방지한다.
+
+**트레이드오프:** Teacher 행 전체에 락을 걸기 때문에 같은 선생님의 **다른 시간대** 예약도 직렬화된다. 현재 규모에서는 문제가 없지만, 트래픽이 증가하면 유니크 제약 조건 `(teacher_id, start_at, status)` 기반으로 충돌을 감지하는 낙관적 방식이나, 시간대별 분산 락을 고려할 수 있다.
 
 ### 대안: Redis 분산 락 (Redisson)
 
@@ -273,7 +293,7 @@ Lock Key: lesson:teacher:{teacherId}:time:{startAt}
 
 ## 테스트
 
-총 **34개** 테스트 (Spock Framework)
+총 **29개** 테스트 (Spock Framework)
 
 | 분류 | 파일 | 테스트 수 |
 |------|------|-----------|
@@ -282,7 +302,6 @@ Lock Key: lesson:teacher:{teacherId}:time:{startAt}
 | 통합 | AvailableTeachersControllerSpec | 6 |
 | 통합 | CreateLessonControllerSpec | 9 |
 | 동시성 | LessonConcurrencySpec | 1 |
-| QueryDSL | LessonQueryRepositorySpec | 5 |
 
 ### 동시성 테스트
 

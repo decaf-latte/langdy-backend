@@ -2,7 +2,6 @@ package com.langdy.repository;
 
 import com.langdy.entity.LessonStatus;
 import com.langdy.entity.Teacher;
-import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
@@ -22,15 +21,13 @@ public class LessonQueryRepository {
     public List<Teacher> findAvailableTeachers(LocalDateTime startAt) {
         return queryFactory
                 .selectFrom(teacher)
-                .where(teacher.id.notIn(
-                        JPAExpressions
-                                .select(lesson.teacherId)
-                                .from(lesson)
-                                .where(
-                                        lesson.startAt.eq(startAt),
-                                        lesson.status.eq(LessonStatus.BOOKED)
-                                )
-                ))
+                .leftJoin(lesson)
+                .on(
+                        lesson.teacherId.eq(teacher.id),
+                        lesson.startAt.eq(startAt),
+                        lesson.status.eq(LessonStatus.BOOKED)
+                )
+                .where(lesson.id.isNull())
                 .orderBy(teacher.id.asc())
                 .fetch();
     }

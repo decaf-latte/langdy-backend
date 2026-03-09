@@ -12,6 +12,10 @@ import java.time.LocalDateTime;
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@Table(indexes = {
+        @Index(name = "idx_lesson_teacher_start_status", columnList = "teacherId, startAt, status"),
+        @Index(name = "idx_lesson_student_start_status", columnList = "studentId, startAt, status")
+})
 public class Lesson {
 
     private static final int LESSON_DURATION_MINUTES = 20;
