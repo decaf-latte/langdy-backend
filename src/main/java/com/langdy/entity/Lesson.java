@@ -1,5 +1,7 @@
 package com.langdy.entity;
 
+import com.langdy.exception.BusinessException;
+import com.langdy.exception.ErrorCode;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -50,7 +52,7 @@ public class Lesson {
 
     public void cancel() {
         if (this.status != LessonStatus.BOOKED) {
-            throw new IllegalStateException("BOOKED 상태에서만 취소할 수 있습니다.");
+            throw new BusinessException(ErrorCode.INVALID_LESSON_STATUS);
         }
         this.status = LessonStatus.CANCELLED;
     }
