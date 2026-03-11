@@ -163,7 +163,7 @@ sequenceDiagram
     C->>S: GET /courses/{courseId}/available-teachers?startAt=...
     S->>SV: getAvailableTeachers(courseId, startAt)
     SV->>SV: StartTimeValidator.validate(startAt)
-    SV->>DB: courseRepository.existsById(courseId)
+    SV->>DB: courseRepository.findById(courseId)
     alt 코스 없음
         SV-->>C: 404 COURSE_NOT_FOUND
     end
@@ -185,7 +185,7 @@ sequenceDiagram
     C->>S: POST /lessons (X-Student-Id 헤더)
     S->>SV: createLesson(command)
     SV->>SV: StartTimeValidator.validate(startAt)
-    SV->>DB: courseRepository.existsById(courseId)
+    SV->>DB: courseRepository.findById(courseId)
     alt 코스 없음
         SV-->>C: 404 COURSE_NOT_FOUND
     end
@@ -221,7 +221,7 @@ sequenceDiagram
 
 - **N+1 방지:** 연관 엔티티를 즉시 로딩하지 않으므로 불필요한 쿼리가 발생하지 않는다.
 - **도메인 결합도 최소화:** Lesson이 Teacher/Student/Course의 생명주기에 의존하지 않는다.
-- **존재 검증:** 필요한 경우 애플리케이션 레벨에서 `existsById()` 또는 `findByIdWithLock()`으로 존재를 확인한다.
+- **존재 검증:** 필요한 경우 애플리케이션 레벨에서 `findById()` 또는 `findByIdWithLock()`으로 존재를 확인한다.
 
 ---
 
@@ -272,32 +272,39 @@ Lock Key: lesson:teacher:{teacherId}:time:{startAt}
 
 ---
 
-## 멀티 Pod 대응 전략
+## 확장 전략: 대기열(Queue) 도입
 
-현재 동시성 처리는 **DB 레벨 락**에 기반하므로 Pod 수에 관계없이 동작한다.
+### 현재 방식의 한계
+
+현재 DB 비관적 락은 데이터 정합성을 보장하지만, 수강 신청처럼 순간적으로 트래픽이 몰리는 상황에서는 한계가 있다.
+
+- **DB 커넥션 고갈:** 모든 요청이 락 대기 → 커넥션 풀 소진 → 다른 API까지 영향
+- **응답 지연:** 락 대기 시간이 길어지면 사용자는 무한 로딩 → 타임아웃
+- **DB 스케일 아웃 한계:** DB는 수평 확장이 가장 어려운 계층
+
+### 해결: 대기열 + 비관적 락 조합
+
+요청을 DB로 바로 보내지 않고 **대기열로 완충**하여 DB가 감당할 수 있는 속도로 순차 처리한다.
 
 ```
-[Pod A] ──┐
-           ├──→ DB (SELECT ... FOR UPDATE) ──→ 하나만 성공
-[Pod B] ──┘
+[Client] → Redis Sorted Set (순번 부여, 즉시 응답) → Worker (순차 처리) → DB (비관적 락)
 ```
 
-### 향후 확장 방안
+1. **진입:** Redis `Sorted Set`으로 순번 부여. 사용자에게 즉시 "접수 완료" 응답
+2. **처리:** Worker가 순번대로 DB에 전달. DB 비관적 락으로 최종 검증
+3. **피드백:** "대기 순번 500번, 예상 대기 10초" 등 실시간 안내로 새로고침 방지
 
-| 전략 | 설명 |
-|------|------|
-| **Redis 분산 락** | Redisson을 활용한 `Lock Key` 기반 동시성 제어. DB 부하를 줄이고 응답 속도 향상 |
-| **예약 큐(Queue)** | 수업 신청 요청을 큐에 넣고 순차 처리. 대규모 트래픽에서 안정적이지만 응답 지연 발생 |
+비관적 락은 **데이터가 꼬이지 않게** 하는 안전장치이고, 대기열은 **서버가 죽지 않게** 하는 방어막이다. 현재 구현은 중소 규모에 적합하며, 트래픽 증가 시 대기열을 앞단에 추가하는 방식으로 확장할 수 있다.
 
 ---
 
 ## 테스트
 
-총 **29개** 테스트 (Spock Framework)
+총 **34개** 테스트 (Spock Framework)
 
 | 분류 | 파일 | 테스트 수 |
 |------|------|-----------|
-| 단위 | StartTimeValidatorSpec | 3 |
+| 단위 | StartTimeValidatorSpec | 8 |
 | 단위 | LessonServiceSpec | 10 |
 | 통합 | AvailableTeachersControllerSpec | 6 |
 | 통합 | CreateLessonControllerSpec | 9 |

@@ -52,7 +52,7 @@ class LessonConcurrencySpec extends Specification {
         def executor = Executors.newFixedThreadPool(threadCount)
         def latch = new CountDownLatch(threadCount)
         def successCount = new AtomicInteger(0)
-        def startAt = LocalDateTime.of(2026, 3, 10, 9, 0, 0)
+        def startAt = LocalDateTime.of(2026, 6, 10, 9, 0, 0)
 
         when:
         (1..threadCount).each { i ->

@@ -39,7 +39,7 @@ class CreateLessonControllerSpec extends Specification {
         mockMvc.perform(post("/api/v1/lessons")
                 .header("X-Student-Id", "1")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content('{"startAt":"2026-03-10T09:00:00","courseId":1,"teacherId":1}'))
+                .content('{"startAt":"2026-06-10T09:00:00","courseId":1,"teacherId":1}'))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath('$.success').value(true))
                 .andExpect(jsonPath('$.data.lessonId').exists())
@@ -47,15 +47,15 @@ class CreateLessonControllerSpec extends Specification {
                 .andExpect(jsonPath('$.data.teacherId').value(1))
                 .andExpect(jsonPath('$.data.studentId').value(1))
                 .andExpect(jsonPath('$.data.status').value("BOOKED"))
-                .andExpect(jsonPath('$.data.startAt').value("2026-03-10T09:00:00"))
-                .andExpect(jsonPath('$.data.endAt').value("2026-03-10T09:20:00"))
+                .andExpect(jsonPath('$.data.startAt').value("2026-06-10T09:00:00"))
+                .andExpect(jsonPath('$.data.endAt').value("2026-06-10T09:20:00"))
     }
 
     def "수업 신청 - X-Student-Id 헤더 누락"() {
         expect:
         mockMvc.perform(post("/api/v1/lessons")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content('{"startAt":"2026-03-10T09:00:00","courseId":1,"teacherId":1}'))
+                .content('{"startAt":"2026-06-10T09:00:00","courseId":1,"teacherId":1}'))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath('$.code').value("MISSING_STUDENT_ID"))
     }
@@ -65,7 +65,7 @@ class CreateLessonControllerSpec extends Specification {
         mockMvc.perform(post("/api/v1/lessons")
                 .header("X-Student-Id", "1")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content('{"startAt":"2026-03-10T09:00:00","courseId":999,"teacherId":1}'))
+                .content('{"startAt":"2026-06-10T09:00:00","courseId":999,"teacherId":1}'))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath('$.code').value("COURSE_NOT_FOUND"))
     }
@@ -75,7 +75,7 @@ class CreateLessonControllerSpec extends Specification {
         mockMvc.perform(post("/api/v1/lessons")
                 .header("X-Student-Id", "1")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content('{"startAt":"2026-03-10T09:00:00","courseId":1,"teacherId":999}'))
+                .content('{"startAt":"2026-06-10T09:00:00","courseId":1,"teacherId":999}'))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath('$.code').value("TEACHER_NOT_FOUND"))
     }
@@ -85,7 +85,7 @@ class CreateLessonControllerSpec extends Specification {
         mockMvc.perform(post("/api/v1/lessons")
                 .header("X-Student-Id", "999")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content('{"startAt":"2026-03-10T09:00:00","courseId":1,"teacherId":1}'))
+                .content('{"startAt":"2026-06-10T09:00:00","courseId":1,"teacherId":1}'))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath('$.code').value("STUDENT_NOT_FOUND"))
     }
@@ -95,7 +95,7 @@ class CreateLessonControllerSpec extends Specification {
         mockMvc.perform(post("/api/v1/lessons")
                 .header("X-Student-Id", "1")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content('{"startAt":"2026-03-10T09:15:00","courseId":1,"teacherId":1}'))
+                .content('{"startAt":"2026-06-10T09:15:00","courseId":1,"teacherId":1}'))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath('$.code').value("INVALID_START_TIME"))
     }
@@ -104,7 +104,7 @@ class CreateLessonControllerSpec extends Specification {
         given:
         em.createNativeQuery(
                 "INSERT INTO lesson (course_id, teacher_id, student_id, status, start_at, end_at) " +
-                "VALUES (1, 1, 1, 'BOOKED', '2026-03-10T09:00:00', '2026-03-10T09:20:00')"
+                "VALUES (1, 1, 1, 'BOOKED', '2026-06-10T09:00:00', '2026-06-10T09:20:00')"
         ).executeUpdate()
         em.flush()
         em.clear()
@@ -113,7 +113,7 @@ class CreateLessonControllerSpec extends Specification {
         mockMvc.perform(post("/api/v1/lessons")
                 .header("X-Student-Id", "2")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content('{"startAt":"2026-03-10T09:00:00","courseId":1,"teacherId":1}'))
+                .content('{"startAt":"2026-06-10T09:00:00","courseId":1,"teacherId":1}'))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath('$.code').value("TEACHER_SCHEDULE_CONFLICT"))
     }
@@ -122,7 +122,7 @@ class CreateLessonControllerSpec extends Specification {
         given:
         em.createNativeQuery(
                 "INSERT INTO lesson (course_id, teacher_id, student_id, status, start_at, end_at) " +
-                "VALUES (1, 1, 1, 'BOOKED', '2026-03-10T09:00:00', '2026-03-10T09:20:00')"
+                "VALUES (1, 1, 1, 'BOOKED', '2026-06-10T09:00:00', '2026-06-10T09:20:00')"
         ).executeUpdate()
         em.flush()
         em.clear()
@@ -131,7 +131,7 @@ class CreateLessonControllerSpec extends Specification {
         mockMvc.perform(post("/api/v1/lessons")
                 .header("X-Student-Id", "1")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content('{"startAt":"2026-03-10T09:00:00","courseId":1,"teacherId":2}'))
+                .content('{"startAt":"2026-06-10T09:00:00","courseId":1,"teacherId":2}'))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath('$.code').value("STUDENT_SCHEDULE_CONFLICT"))
     }

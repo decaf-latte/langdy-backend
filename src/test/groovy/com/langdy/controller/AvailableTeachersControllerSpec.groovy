@@ -40,7 +40,7 @@ class AvailableTeachersControllerSpec extends Specification {
     def "수업 가능한 선생님 목록 조회 - 전체 선생님 반환"() {
         expect:
         mockMvc.perform(get("/api/v1/courses/1/available-teachers")
-                .param("startAt", "2026-03-10T09:00:00"))
+                .param("startAt", "2026-06-10T09:00:00"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath('$.success').value(true))
                 .andExpect(jsonPath('$.data.teachers').isArray())
@@ -51,14 +51,14 @@ class AvailableTeachersControllerSpec extends Specification {
         given:
         em.createNativeQuery(
                 "INSERT INTO lesson (course_id, teacher_id, student_id, status, start_at, end_at) " +
-                "VALUES (1, 1, 1, 'BOOKED', '2026-03-10T09:00:00', '2026-03-10T09:20:00')"
+                "VALUES (1, 1, 1, 'BOOKED', '2026-06-10T09:00:00', '2026-06-10T09:20:00')"
         ).executeUpdate()
         em.flush()
         em.clear()
 
         expect:
         mockMvc.perform(get("/api/v1/courses/1/available-teachers")
-                .param("startAt", "2026-03-10T09:00:00"))
+                .param("startAt", "2026-06-10T09:00:00"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath('$.success').value(true))
                 .andExpect(jsonPath('$.data.teachers.length()').value(2))
@@ -67,7 +67,7 @@ class AvailableTeachersControllerSpec extends Specification {
     def "수업 가능한 선생님 목록 조회 - 존재하지 않는 코스"() {
         expect:
         mockMvc.perform(get("/api/v1/courses/999/available-teachers")
-                .param("startAt", "2026-03-10T09:00:00"))
+                .param("startAt", "2026-06-10T09:00:00"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath('$.code').value("COURSE_NOT_FOUND"))
     }
@@ -75,7 +75,7 @@ class AvailableTeachersControllerSpec extends Specification {
     def "수업 가능한 선생님 목록 조회 - 유효하지 않은 시작 시각"() {
         expect:
         mockMvc.perform(get("/api/v1/courses/1/available-teachers")
-                .param("startAt", "2026-03-10T09:15:00"))
+                .param("startAt", "2026-06-10T09:15:00"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath('$.code').value("INVALID_START_TIME"))
     }

@@ -35,9 +35,8 @@ public class LessonService {
     public List<Teacher> getAvailableTeachers(Long courseId, LocalDateTime startAt) {
         StartTimeValidator.validate(startAt, clock);
 
-        if (!courseRepository.existsById(courseId)) {
-            throw new BusinessException(ErrorCode.COURSE_NOT_FOUND);
-        }
+        courseRepository.findById(courseId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.COURSE_NOT_FOUND));
 
         return lessonQueryRepository.findAvailableTeachers(startAt);
     }
@@ -46,9 +45,8 @@ public class LessonService {
     public Lesson createLesson(CreateLessonCommand command) {
         StartTimeValidator.validate(command.getStartAt(), clock);
 
-        if (!courseRepository.existsById(command.getCourseId())) {
-            throw new BusinessException(ErrorCode.COURSE_NOT_FOUND);
-        }
+        courseRepository.findById(command.getCourseId())
+                .orElseThrow(() -> new BusinessException(ErrorCode.COURSE_NOT_FOUND));
 
         teacherRepository.findByIdWithLock(command.getTeacherId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.TEACHER_NOT_FOUND));
